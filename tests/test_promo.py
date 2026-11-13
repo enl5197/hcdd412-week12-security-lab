@@ -3,8 +3,12 @@ from datetime import date
 
 from tdd_lab.promo import apply_promo
 
-TODAY = date(2026, 11, 9)
+TODAY = date(2026, 11, 12)
 
+
+def test_rounds_discount_down():
+    # 10% of 1,005 is 100.5 -> discount rounds DOWN to 100 -> total 905
+    assert apply_promo(1_005, "SAVE10", TODAY) == 905
 
 def test_save10_takes_ten_percent_off():
     assert apply_promo(10_000, "SAVE10", TODAY) == 9_000
