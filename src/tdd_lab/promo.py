@@ -23,8 +23,35 @@ class PromoError(ValueError):
 
 
 def apply_promo(subtotal_cents: int, code: str, today: date) -> int:
-    discount = subtotal_cents * 10 // 100
-    return subtotal_cents - discount
+    if not isinstance(subtotal_cents, int) or isinstance(subtotal_cents, bool):
+        raise PromoError("subtotal_cents must be an integer")
+    if subtotal_cents < 0:
+        raise PromoError("subtotal_cents cannot be negative")
+    if not isinstance(today, date):
+        raise PromoError("today must be a date")
+    if code is None or not isinstance(code, str):
+        raise PromoError("code must be a string")
+
+    normalized_code = code.strip().upper()
+    if not normalized_code:
+        raise PromoError("code cannot be empty")
+
+    if normalized_code == "SAVE10":
+        discount = subtotal_cents * 10 // 100
+        total = subtotal_cents - discount
+    elif normalized_code == "FLAT5":
+        if subtotal_cents < 2000:
+            raise PromoError("FLAT5 requires subtotal >= $20.00")
+        total = subtotal_cents - 500
+    elif normalized_code == "WELCOME":
+        if today > date(2026, 12, 31):
+            raise PromoError("WELCOME has expired")
+        discount = subtotal_cents * 15 // 100
+        total = subtotal_cents - discount
+    else:
+        raise PromoError(f"unknown promo code: {code}")
+
+    return max(0, total)
 
 
 def test_rounds_discount_down():
