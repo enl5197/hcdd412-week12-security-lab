@@ -2,15 +2,26 @@
 
 Every weakness below is something a real static-analysis tool will flag.
 """
-import hashlib
 import sqlite3
-
-SECRET_KEY = "campus-secret-123"  # hard-coded credential
+import hashlib
+import hmac
+import os
 
 
 def hash_password(password: str) -> str:
-    # Weak, fast hash -- unsuitable for passwords.
-    return hashlib.md5(password.encode()).hexdigest()
+    salt = os.urandom(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode(), salt, 600_000
+    )
+    return salt.hex() + "$" + digest.hex()
+
+
+def verify_password(password: str, stored: str) -> bool:
+    salt_hex, digest_hex = stored.split("$")
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode(), bytes.fromhex(salt_hex), 600_000
+    )
+    return hmac.compare_digest(digest.hex(), digest_hex)
 
 
 def init_db(conn: sqlite3.Connection) -> None:
@@ -27,11 +38,11 @@ def add_user(conn: sqlite3.Connection, name: str, password: str) -> None:
 
 
 def find_user(conn: sqlite3.Connection, name: str):
-    # String-built SQL: attacker-controlled input becomes part of the query.
-    query = "SELECT name, pw_hash FROM users WHERE name = '%s'" % name
-    return conn.execute(query).fetchone()
+    return conn.execute(
+        "SELECT name, pw_hash FROM users WHERE name = ?", (name,)
+    ).fetchone()
 
 
 def check_login(conn: sqlite3.Connection, name: str, password: str) -> bool:
     row = find_user(conn, name)
-    return row is not None and row[1] == hash_password(password)
+    return row is not None and verify_password(password, row[1])

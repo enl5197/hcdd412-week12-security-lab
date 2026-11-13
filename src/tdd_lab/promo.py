@@ -31,16 +31,14 @@ def apply_promo(subtotal_cents: int, code: str, today: date) -> int:
         raise PromoError("today must be a date")
     if code is None or not isinstance(code, str):
         raise PromoError("code must be a string")
-
     normalized_code = code.strip().upper()
     if not normalized_code:
         raise PromoError("code cannot be empty")
-
     if normalized_code == "SAVE10":
         discount = subtotal_cents * 10 // 100
         total = subtotal_cents - discount
     elif normalized_code == "FLAT5":
-        if subtotal_cents < 2000:
+        if subtotal_cents < 2_000:
             raise PromoError("FLAT5 requires subtotal >= $20.00")
         total = subtotal_cents - 500
     elif normalized_code == "WELCOME":
@@ -50,10 +48,4 @@ def apply_promo(subtotal_cents: int, code: str, today: date) -> int:
         total = subtotal_cents - discount
     else:
         raise PromoError(f"unknown promo code: {code}")
-
     return max(0, total)
-
-
-def test_rounds_discount_down():
-# 10% of 1,005 is 100.5 -> discount rounds DOWN to 100 -> total 905
-    assert apply_promo(1_005, "SAVE10", TODAY) == 905
