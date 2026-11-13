@@ -25,3 +25,7 @@ class PromoError(ValueError):
 def apply_promo(subtotal_cents: int, code: str, today: date) -> int:
     """Return the new total in cents after applying ``code``."""
     raise NotImplementedError("Write the tests first, then implement me.")
+
+def test_rounds_discount_down():
+# 10% of 1,005 is 100.5 -> discount rounds DOWN to 100 -> total 905
+    assert apply_promo(1_005, "SAVE10", TODAY) == 905
